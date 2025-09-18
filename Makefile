@@ -1,7 +1,7 @@
 .PHONY: dev, test
 
 dev:
-	uv run chainlit run main.py -w
+	uv run python -m chainlit run main.py -w
 
 test: 
 	adk web ./clients

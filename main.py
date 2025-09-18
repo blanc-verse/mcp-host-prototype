@@ -11,10 +11,6 @@ from services.file_storage.openai_storage_service import OpenAiStorageService
 
 load_dotenv()
 
-file_storage_service = OpenAiStorageService()
-runner_service = OpenAiRunnerService()
-content_parser = OpenAiContentParser()
-
 
 @cl.data_layer
 def get_data_layer():
@@ -30,7 +26,14 @@ def get_data_layer():
 
 @cl.on_chat_start
 async def on_chat_start():
-    await runner_service.build_finance_agent()
+    global runner
+    runner = OpenAiRunnerService(
+        file_storage_service=OpenAiStorageService(),
+    )
+    await runner.build_finance_agent()
+
+    global content_parser
+    content_parser = OpenAiContentParser()
 
 
 @cl.password_auth_callback
@@ -39,6 +42,7 @@ async def auth_callback(username: str, password: str):
     # and compare the hashed password with the value stored in the database
     if (username, password) == ("admin", "admin"):
         return cl.User(
+            display_name="SUper User",
             identifier="admin",
             metadata={
                 "role": "admin",
@@ -56,11 +60,11 @@ async def on_message(message: cl.Message):
 
     items = await content_parser.from_chainlit(message)
 
-    result = runner_service.runner.run_streamed(
-        starting_agent=runner_service.agent,
+    result = runner.runner.run_streamed(
+        starting_agent=runner.agent,
         # input=message.content,
         input=items,
-        # session=runner_service.session,
+        # session=runner.session,
     )
 
     print("=== Run starting ===")
@@ -70,7 +74,7 @@ async def on_message(message: cl.Message):
         if event.type == "raw_response_event":
             await content_parser.to_chainlit(
                 message,
-                file_storage_service=file_storage_service,
+                file_storage_service=runner.file_storage_service,
                 event=event,
             )
 
