@@ -15,6 +15,7 @@ from agents import (
     TResponseInputItem,
 )
 from dotenv import load_dotenv
+from internal_agents.openai.function_tools import list_artifacts, read_artifact
 from services.agent_runner.agent_runner_service import AgentRunnerService
 from services.content_parser.openai_content_parser import OpenAiContentParser
 from services.file_storage.openai_storage_service import OpenAiStorageService
@@ -64,7 +65,6 @@ class OpenAiRunnerService(AgentRunnerService):
 
     async def run_streamed(
         self,
-        starting_agent: Agent[TContext],
         message: cl.Message,
         context: TContext | None = None,
         max_turns: int = DEFAULT_MAX_TURNS,
@@ -76,7 +76,7 @@ class OpenAiRunnerService(AgentRunnerService):
 
         # runner could only receive string input of we have session attached
         return self.runner.run_streamed(
-            starting_agent,
+            self.agent,
             message.content,
             context,
             max_turns,
@@ -120,6 +120,8 @@ class OpenAiRunnerService(AgentRunnerService):
                         "type": "code_interpreter",
                         "container": {"type": "auto"},
                     }
-                )
+                ),
+                list_artifacts,
+                read_artifact,
             ],
         )

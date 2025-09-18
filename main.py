@@ -54,7 +54,6 @@ async def auth_callback(username: str, password: str):
 async def on_message(message: cl.Message):
     # Send a response back to the user
     result = await runner.run_streamed(
-        starting_agent=runner.agent,
         message=message,
     )
 

@@ -1,5 +1,5 @@
 import uuid
-from prebuilt_agents.gemini import agent
+from internal_agents.gemini import agent
 from services.artifacts.local_disk_artifact_service import LocalDiskArtifactService
 from google.adk.sessions import InMemorySessionService
 from google.adk.runners import Runner

@@ -2,7 +2,7 @@ from typing_extensions import override
 import chainlit as cl
 import google.genai.types as types
 import pandas as pd
-from prebuilt_agents.utils import EXCEL_MIMES
+from internal_agents.utils import EXCEL_MIMES
 from google.adk.artifacts.base_artifact_service import BaseArtifactService
 from google.adk.sessions import Session as GeminiSession
 from .content_parser import ContentParser

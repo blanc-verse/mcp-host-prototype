@@ -10,7 +10,7 @@ from typing_extensions import override
 import chainlit as cl
 import google.genai.types as types
 import pandas as pd
-from prebuilt_agents.utils import EXCEL_MIMES
+from internal_agents.utils import EXCEL_MIMES
 from services.file_storage.openai_storage_service import OpenAiStorageService
 from .content_parser import ContentParser
 from openai.types.responses import (
