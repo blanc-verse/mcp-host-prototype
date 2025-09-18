@@ -2,15 +2,30 @@ from contextlib import AsyncExitStack
 import os
 from typing import List
 import uuid
-from agents import Agent, CodeInterpreterTool, ModelSettings, Runner
+from agents import (
+    Agent,
+    CodeInterpreterTool,
+    ModelSettings,
+    RunConfig,
+    RunHooks,
+    RunResultStreaming,
+    Runner,
+    Session,
+    TContext,
+    TResponseInputItem,
+)
 from dotenv import load_dotenv
 from services.agent_runner.agent_runner_service import AgentRunnerService
+from services.content_parser.openai_content_parser import OpenAiContentParser
 from services.file_storage.openai_storage_service import OpenAiStorageService
 from agents.mcp import MCPServer, MCPServerStreamableHttp, MCPServerStreamableHttpParams
 from agents.extensions.memory.sqlalchemy_session import SQLAlchemySession
 from sqlalchemy.ext.asyncio import create_async_engine
+import chainlit as cl
 
 load_dotenv()
+
+DEFAULT_MAX_TURNS = 10
 
 
 class OpenAiRunnerService(AgentRunnerService):
@@ -19,6 +34,9 @@ class OpenAiRunnerService(AgentRunnerService):
         user_id=str(uuid.uuid4()),
         session_id=str(uuid.uuid4()),
         file_storage_service=OpenAiStorageService(),
+        content_parser=OpenAiContentParser(
+            file_root_path="/Users/macbookpro/src/avian/jalin_web_host/public/artifacts"
+        ),
     ) -> None:
         self.name = "intelligent_data_assistant"
         self.user_id = user_id
@@ -40,7 +58,33 @@ class OpenAiRunnerService(AgentRunnerService):
 
         self.agent = Agent(name="Default Agent")
 
+        self.content_parser = content_parser
+
         self.runner = Runner()
+
+    async def run_streamed(
+        self,
+        starting_agent: Agent[TContext],
+        message: cl.Message,
+        context: TContext | None = None,
+        max_turns: int = DEFAULT_MAX_TURNS,
+        hooks: RunHooks[TContext] | None = None,
+        run_config: RunConfig | None = None,
+        previous_response_id: str | None = None,
+    ) -> RunResultStreaming:
+        await self.content_parser.save_attachments(message)
+
+        # runner could only receive string input of we have session attached
+        return self.runner.run_streamed(
+            starting_agent,
+            message.content,
+            context,
+            max_turns,
+            hooks,
+            run_config,
+            previous_response_id,
+            self.session,
+        )
 
     async def build_finance_agent(self):
 
@@ -55,6 +99,7 @@ class OpenAiRunnerService(AgentRunnerService):
 
         self.mcp_servers = [server]
 
+        # TODO: add tools to read artifact (so model could get access to previous uplaoded files)
         self.agent = Agent(
             model="gpt-5",
             name="Orchestrator Agent",

@@ -1,4 +1,5 @@
 import base64
+import os
 from agents import (
     RawResponsesStreamEvent,
     TResponseInputItem,
@@ -40,40 +41,26 @@ load_dotenv()
 
 
 class OpenAiContentParser(ContentParser):
-    @override
-    async def from_chainlit(
+    def __init__(self, file_root_path: str) -> None:
+        super().__init__()
+        self.file_root_path = file_root_path
+
+    async def save_attachments(
         self,
         message: cl.Message,
-    ) -> list[TResponseInputItem]:
-        content: ResponseInputMessageContentListParam = []
+    ) -> None:
         for element in message.elements:
             if element.type == "file" and element.mime in EXCEL_MIMES:
                 continue
 
             if element.type == "file" and element.mime == "text/csv":
-                df = pd.read_csv(str(element.path))
-
-                content.append(
-                    ResponseInputTextParam(
-                        type="input_text",
-                        text=df.to_csv(),
-                    ),
-                )
+                os.rename(str(element.path), f"{self.file_root_path}/{element.name}")
 
             # Another types of files goes here
-
-        # User message appended as the last item of content
-        content.append(
-            ResponseInputTextParam(text=message.content, type="input_text"),
-        )
-
-        return [
-            EasyInputMessageParam(
-                content=content,
-                role="user",
-                type="message",
-            ),
-        ]
+            
+    @override
+    async def from_chainlit(self):
+        return super().from_chainlit()
 
     @override
     async def to_chainlit(

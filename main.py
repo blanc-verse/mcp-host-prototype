@@ -32,9 +32,6 @@ async def on_chat_start():
     )
     await runner.build_finance_agent()
 
-    global content_parser
-    content_parser = OpenAiContentParser()
-
 
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str):
@@ -56,15 +53,9 @@ async def auth_callback(username: str, password: str):
 @cl.on_message
 async def on_message(message: cl.Message):
     # Send a response back to the user
-    # input = await content_parser.from_chainlit(message)
-
-    items = await content_parser.from_chainlit(message)
-
-    result = runner.runner.run_streamed(
+    result = await runner.run_streamed(
         starting_agent=runner.agent,
-        # input=message.content,
-        input=items,
-        # session=runner.session,
+        message=message,
     )
 
     print("=== Run starting ===")
@@ -72,7 +63,7 @@ async def on_message(message: cl.Message):
     async for event in result.stream_events():
         # We'll ignore the raw responses event deltas
         if event.type == "raw_response_event":
-            await content_parser.to_chainlit(
+            await runner.content_parser.to_chainlit(
                 message,
                 file_storage_service=runner.file_storage_service,
                 event=event,
